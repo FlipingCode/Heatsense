@@ -10,3 +10,5 @@ __pycache__/
 .DS_Store
 Thumbs.db
 archive_maharashtra/outputs/lst_model_v3.pkl
+archive_maharashtra/
+cities/

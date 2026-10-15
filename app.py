@@ -6,6 +6,7 @@ import plotly.express as px
 import streamlit as st
 from pathlib import Path
 import plotly.graph_objects as go
+from src.multi_city_engine import render_multi_city_tab
 
 # ==================================================
 # PAGE CONFIG
@@ -485,6 +486,91 @@ def style_chart(fig):
     return fig
 
 
+
+def add_top10_markers(fig, base_df, priority_df=None, label_prefix="Hotspot"):
+    """Overlay Top 10 Priority Zone markers (or Top 10 hottest points) onto a Plotly Maplibre figure."""
+    top_df = None
+
+    if priority_df is not None and not priority_df.empty:
+        p_df = priority_df.copy()
+        lat_col = next((c for c in ["Latitude", "Center_Latitude", "lat", "Lat"] if c in p_df.columns), None)
+        lon_col = next((c for c in ["Longitude", "Center_Longitude", "lon", "Lon"] if c in p_df.columns), None)
+
+        if lat_col and lon_col:
+            p_df["Latitude"] = pd.to_numeric(p_df[lat_col], errors="coerce")
+            p_df["Longitude"] = pd.to_numeric(p_df[lon_col], errors="coerce")
+            top_df = p_df.dropna(subset=["Latitude", "Longitude"]).head(10).copy()
+        elif "Zone_ID" in p_df.columns and "Zone_ID" in base_df.columns:
+            centroids = (
+                base_df.groupby("Zone_ID")[["Latitude", "Longitude"]]
+                .mean()
+                .reset_index()
+            )
+            merged = pd.merge(p_df.head(10), centroids, on="Zone_ID", how="left")
+            top_df = merged.dropna(subset=["Latitude", "Longitude"]).copy()
+
+    if top_df is None or top_df.empty:
+        sort_col = next(
+            (c for c in ["Observed_LST_C", "LST_After", "Predicted_LST_C", "Baseline_Predicted_LST_C", "Heat_Vulnerability_Index"]
+             if c in base_df.columns),
+            None
+        )
+        if sort_col:
+            top_df = base_df.dropna(subset=["Latitude", "Longitude", sort_col]).nlargest(10, sort_col).copy()
+        else:
+            return fig
+
+    top_df = top_df.head(10).reset_index(drop=True)
+    top_df["Rank"] = [f"#{i+1}" for i in range(len(top_df))]
+
+    zone_col = "Zone_ID" if "Zone_ID" in top_df.columns else None
+    temp_col = next(
+        (c for c in ["Mean_Observed_LST_C", "Mean_LST_C", "Observed_LST_C", "LST_After", "Predicted_LST_C", "Baseline_Predicted_LST_C", "Mean_Vulnerability_Index", "Heat_Vulnerability_Index"]
+         if c in top_df.columns),
+        None
+    )
+
+    hover_texts = []
+    for _, row in top_df.iterrows():
+        parts = [f"<b>Rank {row['Rank']} Priority {label_prefix}</b>"]
+        if zone_col and pd.notna(row[zone_col]):
+            parts.append(f"Zone: {row[zone_col]}")
+        if temp_col and pd.notna(row[temp_col]):
+            unit = " °C" if "LST" in temp_col else ""
+            parts.append(f"{temp_col.replace('_', ' ')}: {float(row[temp_col]):.2f}{unit}")
+        parts.append(f"Coords: ({row['Latitude']:.4f}, {row['Longitude']:.4f})")
+        hover_texts.append("<br>".join(parts))
+
+    # Outer dark halo ring so markers stand out against both red heatmaps and scatter points
+    fig.add_trace(
+        go.Scattermap(
+            lat=top_df["Latitude"],
+            lon=top_df["Longitude"],
+            mode="markers",
+            marker=dict(size=18, color="#1a0908", opacity=0.92),
+            hoverinfo="skip",
+            showlegend=False
+        )
+    )
+
+    # Inner bright marker + Rank label (#1 - #10)
+    fig.add_trace(
+        go.Scattermap(
+            lat=top_df["Latitude"],
+            lon=top_df["Longitude"],
+            mode="markers+text",
+            name=f"📍 Top 10 {label_prefix}s",
+            text=top_df["Rank"],
+            textposition="top center",
+            textfont=dict(family="Arial, sans-serif", size=12, color="#1a0908"),
+            marker=dict(size=11, color="#00e5ff", opacity=1.0),
+            hovertext=hover_texts,
+            hoverinfo="text"
+        )
+    )
+    return fig
+
+
 def make_small_clean_map(
     dataframe,
     color_column,
@@ -590,6 +676,17 @@ def make_small_clean_map(
             selector=dict(type="scattermap")
         )
 
+    show_top10 = st.checkbox(
+        "📍 Show Top 10 Priority / Hottest Markers on Map",
+        value=True,
+        key=f"top10_toggle_{title}"
+    )
+    if show_top10:
+        is_vuln = color_column == "Vulnerability_Category"
+        p_source = vulnerability_zones if is_vuln else priority_zones
+        p_label = "Vulnerable Zone" if is_vuln else "Hottest Zone"
+        fig = add_top10_markers(fig, dataframe, priority_df=p_source, label_prefix=p_label)
+
     fig.update_layout(
         legend_title_text=MAP_LEGEND_TITLES.get(
             color_column, color_column.replace("_", " ")
@@ -659,6 +756,7 @@ page = st.sidebar.radio(
         "Heat Vulnerability",
         "AI Cooling Intervention Simulator",
         "Model Validation",
+        "🌍 Multi-City GEE & AI Trainer",
         "About Project",
     ],
 )
@@ -1797,6 +1895,8 @@ elif page == "AI Cooling Intervention Simulator":
                 selector=dict(type="scattermap")
             )
 
+        if st.checkbox("📍 Show Top 10 Hottest Post-Intervention Locations", value=True, key="sim_top10_toggle"):
+            fig = add_top10_markers(fig, simulated_df, priority_df=None, label_prefix="Simulated Hotspot")
         fig.update_layout(legend_title_text="Hotspot Category")
         fig = style_map(fig, zoom=11.2)
 
@@ -2286,6 +2386,9 @@ elif page == "Model Validation":
 # ===================================================
 # ABOUT PROJECT
 # ==================================================
+elif page == "🌍 Multi-City GEE & AI Trainer":
+    render_multi_city_tab(style_chart_fn=style_chart)
+
 elif page == "About Project":
 
     st.header("ℹ️ About the Project")
