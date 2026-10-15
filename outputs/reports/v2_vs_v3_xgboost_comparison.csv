@@ -1,0 +1,3 @@
+Dataset,Model,Validation,R2,MAE_C,RMSE_C
+Dataset V2,XGBoost,Spatial block cross-validation,0.51,1.78,2.26
+Dataset V3,XGBoost,Spatial block cross-validation,0.6855,1.2125,1.5709

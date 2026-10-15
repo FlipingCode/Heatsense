@@ -1,0 +1,9 @@
+Metric,Value
+Original Rows,9893
+Original Columns,10
+Cleaned Rows,9893
+Cleaned Columns,8
+Removed Columns,"system:index, .geo"
+Missing Values After Cleaning,0
+Duplicate Rows After Cleaning,0
+LandCover Classes,"10, 20, 30, 40, 50, 60, 80"

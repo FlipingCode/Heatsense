@@ -1,0 +1,9 @@
+LandCover,LandCover_Name,count,mean,median,min,max,std
+60,Bare/sparse vegetation,1409,45.72,45.55,35.84,53.58,2.41
+30,Grassland,1274,45.59,45.82,36.06,51.54,2.41
+40,Cropland,36580,45.37,45.97,32.0,52.96,3.35
+50,Built-up land,42214,44.82,44.55,35.27,53.19,2.07
+20,Shrubland,3947,44.8,45.45,32.85,51.85,3.34
+10,Tree cover,11753,43.31,43.48,33.09,51.36,2.61
+80,Permanent water bodies,898,38.58,38.23,32.35,50.42,3.77
+90,Herbaceous wetland,3,37.04,36.8,36.67,37.64,0.53

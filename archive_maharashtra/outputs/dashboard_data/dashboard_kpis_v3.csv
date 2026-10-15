@@ -1,0 +1,8 @@
+Metric,Value
+Dataset V3 XGBoost R2,0.5669
+Dataset V3 XGBoost MAE (C),1.6696
+Dataset V3 XGBoost RMSE (C),2.1216
+Total Sampled Locations,9893.0
+High Priority Hotspot Zones,10.0
+Mean Urban Greening Cooling (C),0.259
+Mean Cool/Permeable Surface Cooling (C),0.076

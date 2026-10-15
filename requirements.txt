@@ -1,0 +1,14 @@
+# Pinned to the versions verified in the project virtualenv (.venv, Python 3.11)
+streamlit==1.66.0
+pandas==3.0.6
+numpy==2.4.6
+scikit-learn==1.9.1
+scipy==1.17.1
+xgboost==3.2.0
+shap==0.51.0
+plotly>=6.0.0
+folium==0.20.0
+streamlit-folium==0.27.4
+branca==0.8.2
+matplotlib==3.11.2
+joblib==1.6.0
